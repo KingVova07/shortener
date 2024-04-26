@@ -62,6 +62,7 @@ func PostHandle(writer http.ResponseWriter, request *http.Request, params httpro
 
 func DefaultHandler(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	writer.WriteHeader(400)
+	return
 }
 
 func main() {
