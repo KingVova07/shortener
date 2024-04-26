@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/julienschmidt/httprouter"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
@@ -24,6 +25,13 @@ func randSeq(n int) string {
 	return string(b)
 }
 
+func MakeShortURL(name string) string {
+	id := randSeq(6)
+	Dct[id] = name
+	return id
+
+}
+
 func GetHandle(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	//writer.Write([]byte("Hi"))
 	id := params.ByName("id")
@@ -35,26 +43,32 @@ func GetHandle(writer http.ResponseWriter, request *http.Request, params httprou
 }
 
 func PostHandle(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	name := params.ByName("name")
-	writer.WriteHeader(http.StatusCreated)
-	_, err := writer.Write([]byte(host + "/" + MakeShortURL(name)))
+	value, err := ioutil.ReadAll(request.Body)
+	defer request.Body.Close()
+
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusBadRequest)
+		return
+	}
+	url := string(value)
+	//name := params.ByName("name")
+	writer.WriteHeader(201)
+
+	_, err = writer.Write([]byte(host + "/" + MakeShortURL(url)))
 	if err != nil {
 		panic(err)
 	}
 }
 
-func MakeShortURL(name string) string {
-	id := randSeq(6)
-	Dct[id] = name
-	return id
-
+func DefaultHandler(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	writer.WriteHeader(400)
 }
 
 func main() {
-	Dct["ya.ru"] = "yandex.ru"
 	router := httprouter.New()
-	router.POST("/:name", PostHandle)
+	router.POST("/", PostHandle)
 	router.GET("/:id", GetHandle)
+	router.GET("/", DefaultHandler)
 	listen, err := net.Listen("tcp", host)
 	if err != nil {
 		panic(err)
