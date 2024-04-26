@@ -1,8 +1,8 @@
 package main
 
 import (
+	"fmt"
 	"github.com/julienschmidt/httprouter"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
@@ -43,18 +43,18 @@ func GetHandle(writer http.ResponseWriter, request *http.Request, params httprou
 }
 
 func PostHandle(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-	value, err := ioutil.ReadAll(request.Body)
-	defer request.Body.Close()
+	var url string
 
-	if err != nil {
-		http.Error(writer, err.Error(), http.StatusBadRequest)
+	if err := request.ParseForm(); err != nil {
+		writer.Write([]byte(err.Error()))
 		return
 	}
-	url := string(value)
-	//name := params.ByName("name")
+	for k, v := range request.Form {
+		url += fmt.Sprintf("%s: %v\r\n", k, v)
+	}
 	writer.WriteHeader(201)
 
-	_, err = writer.Write([]byte(host + "/" + MakeShortURL(url)))
+	_, err := writer.Write([]byte(host + "/" + MakeShortURL(url)))
 	if err != nil {
 		panic(err)
 	}
